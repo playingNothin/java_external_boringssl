@@ -4,12 +4,16 @@ on early-init && property:ro.product.cpu.abilist32=*
 on early-init && property:ro.product.cpu.abilist64=*
     exec_start boringssl_self_test64_vendor
 
+# Moto G20 (java) 2026-09-24: reboot_on_failure removed from both vendor
+# services. Our vendor image is built from non-FIPS sources, so these
+# binaries load a libcrypto whose FIPS_mode() is always 0 and exit 1 on
+# every boot — with the directive intact, init turned that into a 3.7 s
+# 'boringssl-self-check-failed' reboot at early-init. Stock only passes
+# because SPRD's vendor libcrypto is a FIPS build.
 service boringssl_self_test32_vendor /vendor/bin/boringssl_self_test32
     setenv BORINGSSL_SELF_TEST_CREATE_FLAG true # Any nonempty value counts as true
-    reboot_on_failure reboot,boringssl-self-check-failed
     stdio_to_kmsg
 
 service boringssl_self_test64_vendor /vendor/bin/boringssl_self_test64
     setenv BORINGSSL_SELF_TEST_CREATE_FLAG true # Any nonempty value counts as true
-    reboot_on_failure reboot,boringssl-self-check-failed
     stdio_to_kmsg

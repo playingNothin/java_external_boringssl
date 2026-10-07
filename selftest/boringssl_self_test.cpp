@@ -16,11 +16,22 @@
 
 #include <openssl/crypto.h>
 
-int main(int, char**) {
+#include <stdio.h>
+
+// Moto G20 (java) 2026-09-24: report the outcome to stderr (stdio_to_kmsg
+// forwards it to the kernel log) instead of failing silently. On non-FIPS
+// platform builds FIPS_mode() is always 0 — the power-on self-test this
+// binary validates lives in libcrypto's FIPS-only constructor and never
+// runs — so the failure here is the build mode, not broken crypto.
+int main(int argc, char** argv) {
+    int fips = FIPS_mode();
+    fprintf(stderr, "boringssl_self_test: %s: FIPS_mode()=%d -> %s\n",
+            argc > 0 ? argv[0] : "boringssl_self_test", fips,
+            fips ? "pass" : "fail (non-FIPS platform build)");
     // If we get here, then libcrypto is either in FIPS mode (in which case
     // it doesn't run the self test), or the self test has passed. If the
     // self test ran and failed, then libcrypto will already have abort()ed.
-    if (!FIPS_mode()) {
+    if (!fips) {
         return 1;  // failure
     }
     return 0;  // success
